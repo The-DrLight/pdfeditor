@@ -2,9 +2,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { state, on, emit, uid, checkpoint, popCheckpoint, pageById } from './state.js';
 import { getPageProxy, getRuns, getWidgets } from './pdfload.js';
 import {
-  PX, dims, bboxOf, textMetrics, FONT_CSS, arrowHead, rotFwd, rotInv, overlayTransform,
+  PX, dims, bboxOf, textMetrics, arrowHead, rotFwd, rotInv, overlayTransform,
   widgetFontSize, clamp,
 } from './util.js';
+import { fontCss, ensureFont } from './fonts.js';
 
 const viewer = document.getElementById('viewer');
 const container = document.getElementById('pages');
@@ -222,8 +223,9 @@ function itemEl(it, s, draft) {
 }
 
 function textEl(it, s, d) {
+  ensureFont(it.font, it.bold, it.italic); // no-op for built-in fonts; repaints when the file has loaded
   Object.assign(d.style, {
-    fontSize: it.size * s + 'px', lineHeight: '1.2', fontFamily: FONT_CSS[it.font] || FONT_CSS.sans,
+    fontSize: it.size * s + 'px', lineHeight: '1.2', fontFamily: fontCss(it.font),
     fontWeight: it.bold ? 700 : 400, fontStyle: it.italic ? 'italic' : 'normal',
     color: it.color, whiteSpace: 'pre', width: 'auto', height: 'auto', opacity: it.opacity ?? 1,
   });
@@ -939,5 +941,5 @@ export function initView() {
     { passive: false }
   );
   on('structure', syncPages);
-  on('items', () => {});
+  on('fonts', refreshAll); // a font file finished loading: re-measure and repaint text
 }

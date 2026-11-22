@@ -14,6 +14,7 @@ import { initThumbs, rotatePage, deletePage, duplicatePage, insertBlank } from '
 import { initProps } from './props.js';
 import { openSignatureDialog } from './signature.js';
 import { toast, parseRange } from './util.js';
+import { allFontUrls } from './fonts.js';
 
 // pdf-lib, fontkit and the Unicode fonts are only needed when saving: load them on demand.
 const loadExporter = () => import('./export.js');
@@ -92,6 +93,11 @@ $('btnMore').onclick = (e) => { e.stopPropagation(); $('menuMore').hidden = !$('
 document.addEventListener('click', () => ($('menuMore').hidden = true));
 $('menuMore').addEventListener('click', (e) => {
   const m = e.target.dataset.m;
+  if (m === 'fonts') {
+    $('menuMore').hidden = true;
+    warmFonts();
+    return;
+  }
   if (!m || !state.pages.length) return;
   if (m === 'range') {
     const s = prompt(`Pages to save (e.g. 1-3, 5). Document has ${state.pages.length} pages:`, `1-${state.pages.length}`);
@@ -129,6 +135,21 @@ $('menuMore').addEventListener('click', (e) => {
   }
   $('menuMore').hidden = true;
 });
+
+// Fetch every font file once so the service worker keeps them for offline use
+async function warmFonts() {
+  const urls = allFontUrls();
+  let done = 0, failed = 0;
+  const worker = async () => {
+    while (urls.length) {
+      const u = urls.pop();
+      try { const r = await fetch(u); if (!r.ok) throw new Error(r.status); await r.arrayBuffer(); } catch { failed++; }
+      toast(`Downloading fonts… ${++done}`, 60000);
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  toast(failed ? `Fonts saved, ${failed} failed. Try again when online.` : `All ${done} font files are saved for offline use`, 4500);
+}
 
 /* ------------------------------------------------------------- toolbar */
 

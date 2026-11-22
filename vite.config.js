@@ -41,6 +41,15 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
+        // The ~170 font files are too big to precache; keep each one the first time it is used
+        // (or all at once via "Download fonts for offline use")
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/assets/') && url.pathname.endsWith('.woff'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'font-files', expiration: { maxEntries: 300 }, cacheableResponse: { statuses: [200] } },
+          },
+        ],
       },
     }),
   ],

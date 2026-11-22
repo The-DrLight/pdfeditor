@@ -1,3 +1,5 @@
+import { fontCss } from './fonts.js';
+
 export const PX = 96 / 72; // css px per PDF point at 100% zoom
 
 // Size of the page as displayed (user rotation applied)
@@ -10,16 +12,10 @@ export function hexToRgb01(hex) {
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
-export const FONT_CSS = {
-  sans: 'Helvetica, Arial, sans-serif',
-  serif: '"Times New Roman", Times, serif',
-  mono: '"Courier New", Courier, monospace',
-};
-
 let _ctx;
 export function textMetrics(it) {
   _ctx ||= document.createElement('canvas').getContext('2d');
-  _ctx.font = `${it.italic ? 'italic ' : ''}${it.bold ? '700 ' : '400 '}${it.size}px ${FONT_CSS[it.font] || FONT_CSS.sans}`;
+  _ctx.font = `${it.italic ? 'italic ' : ''}${it.bold ? '700 ' : '400 '}${it.size}px ${fontCss(it.font)}`;
   const lines = (it.text || '').split('\n');
   let w = 0;
   for (const l of lines) w = Math.max(w, _ctx.measureText(l).width);

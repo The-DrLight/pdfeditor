@@ -8,15 +8,8 @@ import { state } from './state.js';
 import { getPageProxy, getWidgets } from './pdfload.js';
 import { hexToRgb01, arrowHead, widgetFontSize } from './util.js';
 
-// Unicode fallback (Latin, Latin Extended, Vietnamese: covers Yoruba, Igbo, Hausa, etc.)
-import latin4 from '@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff?url';
-import latin7 from '@fontsource/noto-sans/files/noto-sans-latin-700-normal.woff?url';
-import ext4 from '@fontsource/noto-sans/files/noto-sans-latin-ext-400-normal.woff?url';
-import ext7 from '@fontsource/noto-sans/files/noto-sans-latin-ext-700-normal.woff?url';
-import vi4 from '@fontsource/noto-sans/files/noto-sans-vietnamese-400-normal.woff?url';
-import vi7 from '@fontsource/noto-sans/files/noto-sans-vietnamese-700-normal.woff?url';
+import { isCatalog, genericOf, variantFiles, fontBytes } from './fonts.js';
 
-const UNI = { 400: [latin4, ext4, vi4], 700: [latin7, ext7, vi7] };
 const col = (hex) => rgb(...hexToRgb01(hex));
 
 export const needsFlatten = (p) =>
@@ -24,8 +17,9 @@ export const needsFlatten = (p) =>
 
 function stdName(it) {
   const b = it.bold, i = it.italic;
-  if (it.font === 'serif') return b && i ? 'TimesRomanBoldItalic' : b ? 'TimesRomanBold' : i ? 'TimesRomanItalic' : 'TimesRoman';
-  if (it.font === 'mono') return b && i ? 'CourierBoldOblique' : b ? 'CourierBold' : i ? 'CourierOblique' : 'Courier';
+  const family = genericOf(it.font);
+  if (family === 'serif') return b && i ? 'TimesRomanBoldItalic' : b ? 'TimesRomanBold' : i ? 'TimesRomanItalic' : 'TimesRoman';
+  if (family === 'mono') return b && i ? 'CourierBoldOblique' : b ? 'CourierBold' : i ? 'CourierOblique' : 'Courier';
   return b && i ? 'HelveticaBoldOblique' : b ? 'HelveticaBold' : i ? 'HelveticaOblique' : 'Helvetica';
 }
 
@@ -46,24 +40,39 @@ class Ctx {
   constructor(out) {
     this.out = out;
     this.std = {};
-    this.uni = {};
-    this.charsets = new Map();
+    this.chains = new Map();
     this.imgs = new Map();
     this.srcDocs = new Map();
   }
   async stdFont(name) {
     return (this.std[name] ||= await this.out.embedFont(StandardFonts[name]));
   }
-  async uniFonts(weight) {
-    if (!this.uni[weight]) {
-      this.uni[weight] = [];
-      for (const u of UNI[weight]) {
-        const f = await this.out.embedFont(await dataUrlBytes(u), { subset: true });
-        this.charsets.set(f, new Set(f.getCharacterSet()));
-        this.uni[weight].push(f);
-      }
+  // The font files (latin, latin-ext, vietnamese) of one catalog font variant. Each entry knows
+  // which characters it covers, and is only embedded into the PDF when a character needs it.
+  // Resolves to null if the files can't be loaded (e.g. offline before they were cached).
+  chain(key, bold, italic) {
+    const id = `${key}|${+!!bold}|${+!!italic}`;
+    if (!this.chains.has(id)) {
+      this.chains.set(id, (async () => {
+        try {
+          const entries = [];
+          for (const f of variantFiles(key, !!bold, !!italic)) {
+            const bytes = new Uint8Array(await fontBytes(f.url));
+            const cs = new Set(fontkit.create(bytes).characterSet);
+            entries.push({ bytes, cs, font: null });
+          }
+          return entries.length ? entries : null;
+        } catch (e) {
+          console.warn('Font files unavailable, using built-in font instead:', key, e);
+          return null;
+        }
+      })());
     }
-    return this.uni[weight];
+    return this.chains.get(id);
+  }
+  async embed(entry) {
+    entry.font ||= await this.out.embedFont(entry.bytes, { subset: true });
+    return entry.font;
   }
   async image(id) {
     if (!this.imgs.has(id)) {
@@ -94,6 +103,8 @@ async function drawText(cx, page, H, it) {
   const theta = ((it.angle || 0) * Math.PI) / 180;
   const c = Math.cos(theta), sn = Math.sin(theta);
   const std = await cx.stdFont(stdName(it));
+  // Real font files for catalog fonts; null (-> built-in PDF font) if they can't be loaded
+  const chain = isCatalog(it.font) ? await cx.chain(it.font, it.bold, it.italic) : null;
   const color = col(it.color || '#000000');
   const opacity = it.opacity ?? 1;
   for (let i = 0; i < lines.length; i++) {
@@ -104,28 +115,41 @@ async function drawText(cx, page, H, it) {
     const bx = it.x + off * sn;
     const by = it.y + off * c;
     let px = bx, py = H - by;
-    if (canEncode(std, line)) {
-      page.drawText(line, { x: px, y: py, size, font: std, color, opacity, rotate: degrees(it.angle || 0) });
+    let cands = chain;
+    if (!cands) {
+      // built-in PDF font, unless the text has characters it can't encode (e.g. Yoruba dots)
+      if (canEncode(std, line)) {
+        page.drawText(line, { x: px, y: py, size, font: std, color, opacity, rotate: degrees(it.angle || 0) });
+        continue;
+      }
+      cands = await cx.chain('noto-sans', it.bold, it.italic);
+    } else if ([...line].some((ch) => !cands.some((e) => e.cs.has(ch.codePointAt(0))))) {
+      // the chosen font lacks some character: let Noto Sans fill the gaps
+      cands = cands.concat((await cx.chain('noto-sans', it.bold, it.italic)) || []);
+    }
+    if (!cands?.length) {
+      page.drawText(line.replace(/[^\x20-\x7e\xa0-\xff]/g, '?'), { x: px, y: py, size, font: std, color, opacity, rotate: degrees(it.angle || 0) });
       continue;
     }
-    const fonts = await cx.uniFonts(it.bold ? 700 : 400);
-    let seg = '', segFont = null;
-    const flush = () => {
+    // Draw run by run, switching font file where the characters need it
+    let seg = '', segEntry = null;
+    const flush = async () => {
       if (!seg) return;
-      page.drawText(seg, { x: px, y: py, size, font: segFont, color, opacity, rotate: degrees(it.angle || 0) });
-      const w = segFont.widthOfTextAtSize(seg, size);
+      const font = await cx.embed(segEntry);
+      page.drawText(seg, { x: px, y: py, size, font, color, opacity, rotate: degrees(it.angle || 0) });
+      const w = font.widthOfTextAtSize(seg, size);
       px += w * c;
       py += w * sn;
       seg = '';
     };
     for (const ch of line) {
       const cp = ch.codePointAt(0);
-      const f = fonts.find((ff) => cx.charsets.get(ff).has(cp)) || fonts[0];
-      const chOk = cx.charsets.get(f).has(cp) ? ch : '?';
-      if (f !== segFont) { flush(); segFont = f; }
-      seg += chOk;
+      const e = cands.find((x) => x.cs.has(cp));
+      const entry = e || cands[0];
+      if (entry !== segEntry) { await flush(); segEntry = entry; }
+      seg += e ? ch : '?';
     }
-    flush();
+    await flush();
   }
 }
 

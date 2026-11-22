@@ -1,12 +1,13 @@
 // Properties panel: edits the selected item, or the defaults for the next one.
 import { state, on, checkpoint } from './state.js';
 import { selItem, refreshPage } from './view.js';
+import { CATALOG, BUILTIN, fontLabel } from './fonts.js';
 
 const panel = document.getElementById('props');
 
 const CTRL = {
   color: { label: 'Text colour', type: 'color' },
-  font: { label: 'Font', type: 'select', options: [['sans', 'Sans (Helvetica)'], ['serif', 'Serif (Times)'], ['mono', 'Mono (Courier)']] },
+  font: { label: 'Font', type: 'font' },
   size: { label: 'Size (pt)', type: 'number', min: 4, max: 400, step: 1 },
   bold: { label: 'Bold', type: 'check' },
   italic: { label: 'Italic', type: 'check' },
@@ -55,8 +56,7 @@ function render() {
   const it = selItem();
   let html = `<h4>${ctx.title}</h4>`;
   if (it?.origFont) {
-    const fam = { sans: 'Sans (Helvetica)', serif: 'Serif (Times)', mono: 'Mono (Courier)' }[it.font];
-    html += `<p class="muted pad0">Original font: <b>${esc(it.origFont)}</b>.<br>Matched to ${fam}${it.bold ? ', bold' : ''}${it.italic ? ', italic' : ''} at ${Math.round(it.size * 10) / 10} pt.</p>`;
+    html += `<p class="muted pad0">Original font: <b>${esc(it.origFont)}</b>.<br>Matched to ${esc(fontLabel(it.font))}${it.bold ? ', bold' : ''}${it.italic ? ', italic' : ''} at ${Math.round(it.size * 10) / 10} pt.</p>`;
   }
   if (state.tool === 'redact' && !it) html += '<p class="muted pad0">Drag over content to black it out. On save, the page is flattened so the hidden text is truly removed.</p>';
   if (state.tool === 'edittext' && !it) html += '<p class="muted pad0">Click any text on the page to replace it.</p>';
@@ -68,6 +68,13 @@ function render() {
     else if (c.type === 'number') html += `<input type="number" data-prop="${prop}" min="${c.min}" max="${c.max}" step="${c.step}" value="${Math.round(v * 10) / 10}">`;
     else if (c.type === 'range') html += `<input type="range" data-prop="${prop}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}">`;
     else if (c.type === 'check') html += `<input type="checkbox" data-prop="${prop}" ${v ? 'checked' : ''}>`;
+    else if (c.type === 'font') {
+      const opt = ([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${esc(l)}</option>`;
+      html += `<select data-prop="font" class="fontsel">
+        <optgroup label="Matches the PDF">${Object.entries(CATALOG).map(([k, f]) => [k, f.label]).map(opt).join('')}</optgroup>
+        <optgroup label="Built-in (no download)">${Object.entries(BUILTIN).map(([k, f]) => [k, f.label]).map(opt).join('')}</optgroup>
+      </select>`;
+    }
     else if (c.type === 'select') html += `<select data-prop="${prop}">${c.options.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
     else if (c.type === 'fill') html += `<span class="fillrow"><input type="color" data-prop="fill" value="${v || '#ffffff'}"><label><input type="checkbox" data-prop="fillnone" ${v ? '' : 'checked'}> none</label></span>`;
     html += '</label>';

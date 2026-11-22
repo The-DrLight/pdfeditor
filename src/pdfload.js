@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { state, uid, checkpoint, resetHistory, emit } from './state.js';
+import { matchFont } from './fonts.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
@@ -92,7 +93,7 @@ export async function getRuns(p) {
       w: it.width * vp.scale,
       cy: tx[5] - size * asc,
       ch: size * (asc + desc),
-      font: family,
+      font: matchFont(lower, family), // real font file closest to the PDF's font
       bold,
       italic,
       fontName: name,
