@@ -12,6 +12,10 @@
     <meta property="og:description" content="Edit, sign and fill PDFs privately. Everything runs in your browser; files are never uploaded." />
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="PDF Editor" />
   </head>
   <body>
     <noscript>This PDF editor needs JavaScript to run.</noscript>
@@ -22,6 +26,7 @@
         <button id="btnOpen" title="Open a PDF (Ctrl+O)">Open</button>
         <button id="btnMerge" title="Append pages from another PDF">Add PDF</button>
         <button id="btnSave" class="primary" title="Download edited PDF (Ctrl+S)">Save PDF</button>
+        <button id="btnInstall" hidden title="Install as an app that also works offline">Install app</button>
         <div class="menu">
           <button id="btnMore">More ▾</button>
           <div class="menu-pop" id="menuMore" hidden>
@@ -146,6 +151,11 @@
     <input type="file" id="fileMerge" accept="application/pdf,.pdf" multiple hidden />
     <input type="file" id="fileImage" accept="image/*" hidden />
     <div id="toast"></div>
+    <div id="update" hidden>
+      <span>A new version is available.</span>
+      <button id="updateNow" class="primary">Reload</button>
+      <button id="updateLater">Later</button>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

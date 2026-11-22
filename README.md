@@ -16,6 +16,17 @@ To test the production build with those same headers locally: `npm run build && 
 
 No backend or environment variables: PDFs are processed entirely in the visitor's browser.
 
+## Install / offline (PWA)
+
+After the first visit the whole app is cached by a service worker, so it works with no connection.
+Chrome, Edge and Android show an **Install app** button; on iOS use Share > Add to Home Screen.
+Installed desktop copies can also appear under "Open with" for `.pdf` files.
+
+- New versions download in the background and a "Reload" banner appears; nothing swaps mid-edit.
+- Icons are generated from `public/favicon.svg` with `npm run icons`.
+- `sw.js` and the manifest are served with `no-cache` (see `vercel.json`) so updates reach installed copies.
+- The service worker only exists in production builds (`npm run build && npm run preview`).
+
 ## Features
 
 - **Edit existing text** (click a line, retype it; background and colour are sampled from the page)

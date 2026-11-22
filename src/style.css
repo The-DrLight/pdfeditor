@@ -127,6 +127,10 @@ body.dragover #viewer { outline: 3px dashed var(--accent); outline-offset: -8px;
 #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 9px 16px; border-radius: 8px; opacity: 0; pointer-events: none; transition: .2s; z-index: 100; }
 #toast.show { opacity: 1; transform: translateX(-50%); }
 
+[hidden] { display: none !important; }
+#update { position: fixed; right: 16px; bottom: 16px; z-index: 110; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
+@media (max-width: 700px) { #update { left: 10px; right: 10px; bottom: 10px; } }
+
 dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 16px 18px; width: min(640px, 94vw); }
 dialog::backdrop { background: rgba(0,0,0,.45); }
 .dlg-head { display: flex; justify-content: space-between; align-items: center; }

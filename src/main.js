@@ -1,4 +1,5 @@
 import './style.css';
+import { registerSW } from 'virtual:pwa-register';
 import '@fontsource/dancing-script/400.css';
 import '@fontsource/caveat/400.css';
 import '@fontsource/great-vibes/400.css';
@@ -260,6 +261,47 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error(e.reason);
   toast('Something went wrong: ' + (e.reason?.message || e.reason), 5000);
 });
+
+/* ------------------------------------------------- installable / offline (PWA) */
+
+// New versions wait behind a banner so the app never reloads in the middle of an edit.
+const updateSW = registerSW({
+  onNeedRefresh: () => ($('update').hidden = false),
+  onOfflineReady: () => toast('Ready to work offline', 4000),
+});
+$('updateNow').onclick = () => {
+  if (isDirty() && !confirm('You have unsaved edits that will be lost if you reload. Reload anyway?')) return;
+  updateSW(true);
+};
+$('updateLater').onclick = () => ($('update').hidden = true);
+
+// "Install app" button (Chrome, Edge, Android). iOS uses Share > Add to Home Screen.
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEvt = e;
+  $('btnInstall').hidden = false;
+});
+$('btnInstall').onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  await installEvt.userChoice;
+  installEvt = null;
+  $('btnInstall').hidden = true;
+};
+window.addEventListener('appinstalled', () => {
+  $('btnInstall').hidden = true;
+  toast('Installed. You can now open it like any other app.', 4000);
+});
+
+// When installed, the OS can hand PDFs to the app ("Open with") on desktop Chromium
+if ('launchQueue' in window) {
+  window.launchQueue.setConsumer(async (params) => {
+    if (!params.files?.length) return;
+    const files = await Promise.all(params.files.map((h) => h.getFile()));
+    openFiles(files, false);
+  });
+}
 
 // Mobile: show / hide the page thumbnails drawer
 $('btnPages').onclick = () => document.body.classList.toggle('show-pages');
