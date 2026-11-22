@@ -56,4 +56,10 @@ bottom-left space, including page rotation, so edits stay aligned.
 - Edits to existing text are "cover and retype" (the original glyphs stay underneath, hidden); there is no re-flow.
 - Redaction and password-protected PDFs flatten the affected pages to images.
 - Not a cryptographic signer: signatures are images, not certificate-based digital signatures.
-- Fonts are the PDF standard fonts (Helvetica / Times / Courier) plus the Noto Sans Unicode fallback.
+- Fonts: edited text keeps the original size, colour, bold and italic, and is matched to the closest of the
+  PDF standard fonts (Helvetica / Times / Courier). The PDF's own fonts are usually subsets, so they can't be
+  reused; letter shapes and widths can differ slightly. Noto Sans is used as the Unicode fallback.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

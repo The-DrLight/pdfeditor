@@ -61,22 +61,27 @@ export async function getRuns(p) {
   if (src.runCache.has(p.idx)) return src.runCache.get(p.idx);
   const pg = await src.doc.getPage(p.idx + 1);
   const vp = pg.getViewport({ scale: 1, rotation: p.base });
+  await pg.getOperatorList(); // makes pdf.js load the page's fonts so their real names/flags are available
   const tc = await pg.getTextContent();
   const out = [];
   for (const it of tc.items) {
     if (!it.str || !it.str.trim()) continue;
     const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
-    const size = Math.hypot(tx[2], tx[3]);
-    if (!size || Math.abs(tx[1]) > 0.02 * size || Math.abs(tx[2]) > 0.02 * size) continue; // rotated text: skip
+    const size = Math.abs(tx[3]); // vertical scale = the font size in points
+    if (!size || Math.abs(tx[1]) > 0.02 * size) continue; // rotated text: skip
+    const skewed = Math.abs(tx[2]) > 0.08 * size; // synthetic italic
     const st = tc.styles[it.fontName] || {};
-    let name = '';
-    try {
-      if (pg.commonObjs.has(it.fontName)) name = pg.commonObjs.get(it.fontName).name || '';
-    } catch { /* font not loaded yet */ }
-    let family = /courier|mono|consolas|typewriter/i.test(name) ? 'mono'
-      : st.fontFamily === 'monospace' ? 'mono'
-      : /times|georgia|garamond|palatino|cambria|serif/i.test(name) && !/sans/i.test(name) ? 'serif'
-      : st.fontFamily === 'serif' ? 'serif' : 'sans';
+    let fobj = null;
+    try { fobj = pg.commonObjs.get(it.fontName); } catch { /* font unavailable */ }
+    const rawName = fobj?.name || '';
+    const name = rawName.replace(/^[A-Z]{6}\+/, ''); // drop the subset prefix, e.g. ABCDEF+Calibri-Bold
+    const lower = name.toLowerCase();
+    const fallback = fobj?.fallbackName || st.fontFamily || 'sans-serif';
+    const family = /courier|mono|consolas|menlo|typewriter|lucida console|source code/.test(lower) || fallback === 'monospace' ? 'mono'
+      : (/times|georgia|garamond|palatino|cambria|minion|baskerville|bodoni|century|didot|book antiqua|serif/.test(lower) && !/sans/.test(lower)) || fallback === 'serif' ? 'serif'
+      : 'sans';
+    const bold = !!(fobj?.bold || fobj?.black) || /bold|black|heavy|semibold|demi|extrabold/.test(lower);
+    const italic = !!fobj?.italic || skewed || /italic|oblique|slanted|kursiv/.test(lower);
     const asc = Number.isFinite(st.ascent) ? Math.min(1.1, Math.max(0.6, st.ascent)) : 0.88;
     const desc = Number.isFinite(st.descent) ? Math.min(0.4, Math.max(0.1, -st.descent)) : 0.22;
     out.push({
@@ -88,8 +93,9 @@ export async function getRuns(p) {
       cy: tx[5] - size * asc,
       ch: size * (asc + desc),
       font: family,
-      bold: /bold|black|heavy|demi/i.test(name),
-      italic: /italic|oblique/i.test(name),
+      bold,
+      italic,
+      fontName: name,
     });
   }
   src.runCache.set(p.idx, out);

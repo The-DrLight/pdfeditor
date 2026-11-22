@@ -761,6 +761,7 @@ function convertRun(e, p, r) {
   const text = {
     id: uid('i'), type: 'text', x: r.x, y: r.base - 0.95 * r.size, text: r.str,
     size: +r.size.toFixed(2), color: fg, font: r.font, bold: r.bold, italic: r.italic,
+    origFont: r.fontName || '',
   };
   checkpoint();
   p.items.push(cover, text);

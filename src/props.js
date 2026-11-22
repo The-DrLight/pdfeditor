@@ -33,6 +33,8 @@ function context() {
   }
 }
 
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const itemKey = (it, prop) => (prop === 'hl' ? 'fill' : prop);
 
 function valueOf(prop, it) {
@@ -52,6 +54,10 @@ function render() {
   }
   const it = selItem();
   let html = `<h4>${ctx.title}</h4>`;
+  if (it?.origFont) {
+    const fam = { sans: 'Sans (Helvetica)', serif: 'Serif (Times)', mono: 'Mono (Courier)' }[it.font];
+    html += `<p class="muted pad0">Original font: <b>${esc(it.origFont)}</b>.<br>Matched to ${fam}${it.bold ? ', bold' : ''}${it.italic ? ', italic' : ''} at ${Math.round(it.size * 10) / 10} pt.</p>`;
+  }
   if (state.tool === 'redact' && !it) html += '<p class="muted pad0">Drag over content to black it out. On save, the page is flattened so the hidden text is truly removed.</p>';
   if (state.tool === 'edittext' && !it) html += '<p class="muted pad0">Click any text on the page to replace it.</p>';
   for (const prop of ctx.props) {
