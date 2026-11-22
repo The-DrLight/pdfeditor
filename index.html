@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Editor</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="bar top">
+        <div class="brand">PDF<b>Editor</b></div>
+        <button id="btnOpen" title="Open a PDF (Ctrl+O)">Open</button>
+        <button id="btnMerge" title="Append pages from another PDF">Add PDF</button>
+        <button id="btnSave" class="primary" title="Download edited PDF (Ctrl+S)">Save PDF</button>
+        <div class="menu">
+          <button id="btnMore">More ▾</button>
+          <div class="menu-pop" id="menuMore" hidden>
+            <button data-m="range">Save selected pages…</button>
+            <button data-m="watermark">Add watermark…</button>
+            <button data-m="numbers">Add page numbers</button>
+          </div>
+        </div>
+        <span class="sep"></span>
+        <button id="btnUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+        <button id="btnRedo" title="Redo (Ctrl+Y)">↷ Redo</button>
+        <span class="sep"></span>
+        <button id="zoomOut" title="Zoom out">−</button>
+        <span id="zoomLbl" class="lbl">100%</span>
+        <button id="zoomIn" title="Zoom in">+</button>
+        <button id="zoomFit" title="Fit width">Fit</button>
+        <span class="sep"></span>
+        <span class="lbl"><span id="pgNum">0</span> / <span id="pgTotal">0</span></span>
+        <span class="grow"></span>
+        <input id="findInput" type="search" placeholder="Find text…" />
+        <button id="findPrev" title="Previous match">↑</button>
+        <button id="findNext" title="Next match">↓</button>
+        <span id="findCount" class="lbl"></span>
+      </header>
+
+      <div class="bar tools" id="toolbar">
+        <button data-tool="select" class="on" title="Select / move (Esc)">Select</button>
+        <span class="sep"></span>
+        <button data-tool="text" title="Add text">Text</button>
+        <button data-tool="edittext" title="Edit text that already exists in the PDF">Edit text</button>
+        <button id="btnImage" title="Insert an image">Image</button>
+        <button id="btnSign" title="Draw, type or upload a signature">Sign</button>
+        <span class="sep"></span>
+        <button data-tool="pen" title="Freehand pen">Pen</button>
+        <button data-tool="highlight" title="Highlight">Highlight</button>
+        <button data-tool="rect" title="Rectangle">Rect</button>
+        <button data-tool="ellipse" title="Ellipse">Ellipse</button>
+        <button data-tool="line" title="Line (Shift = 45°)">Line</button>
+        <button data-tool="arrow" title="Arrow">Arrow</button>
+        <span class="sep"></span>
+        <button data-tool="whiteout" title="Cover content with white">Whiteout</button>
+        <button data-tool="redact" title="Permanently black out content">Redact</button>
+        <span class="sep"></span>
+        <button id="btnCheck" title="Insert a check mark">✓</button>
+        <button id="btnCross" title="Insert a cross">✗</button>
+        <button id="btnDate" title="Insert today's date">Date</button>
+      </div>
+
+      <div class="main">
+        <aside id="sidebar">
+          <div class="side-head">
+            <b>Pages</b>
+            <div class="pgops">
+              <button id="pgLeft" title="Rotate left">⟲</button>
+              <button id="pgRight" title="Rotate right">⟳</button>
+              <button id="pgDup" title="Duplicate page">⧉</button>
+              <button id="pgBlank" title="Insert blank page after">＋</button>
+              <button id="pgDel" title="Delete page">🗑</button>
+            </div>
+          </div>
+          <div id="thumbs"></div>
+        </aside>
+
+        <main id="viewer" data-tool="select">
+          <div id="pages"></div>
+          <div id="empty">
+            <div class="empty-card">
+              <h2>Open a PDF to start editing</h2>
+              <p>Drop a file here, or</p>
+              <button class="primary big" id="btnOpen2">Open PDF</button>
+              <p class="muted">Everything happens in your browser. Files never leave your computer.</p>
+            </div>
+          </div>
+        </main>
+
+        <aside id="props"></aside>
+      </div>
+    </div>
+
+    <dialog id="sigDialog">
+      <div class="dlg-head"><h3>Add signature</h3><button id="sigClose" title="Close">×</button></div>
+      <div id="sigSaved" hidden></div>
+      <div class="tabs">
+        <button data-tab="draw" class="on">Draw</button>
+        <button data-tab="type">Type</button>
+        <button data-tab="upload">Upload</button>
+      </div>
+      <div class="tabpane" data-pane="draw">
+        <canvas id="sigPad" width="1120" height="360"></canvas>
+        <div class="row">
+          <label>Ink
+            <select id="sigInk">
+              <option value="#111111">Black</option>
+              <option value="#1d4ed8">Blue</option>
+              <option value="#7c3aed">Purple</option>
+            </select>
+          </label>
+          <button id="sigClear">Clear</button>
+        </div>
+      </div>
+      <div class="tabpane" data-pane="type" hidden>
+        <input id="sigText" placeholder="Type your name" />
+        <select id="sigFont">
+          <option>Dancing Script</option>
+          <option>Great Vibes</option>
+          <option>Caveat</option>
+        </select>
+        <canvas id="sigPreview" width="1120" height="260"></canvas>
+      </div>
+      <div class="tabpane" data-pane="upload" hidden>
+        <input id="sigFile" type="file" accept="image/*" />
+        <label><input id="sigRemoveBg" type="checkbox" checked /> Remove white background</label>
+        <canvas id="sigUpPreview" width="1120" height="300"></canvas>
+      </div>
+      <div class="dlg-foot">
+        <label><input id="sigSave" type="checkbox" checked /> Remember on this device</label>
+        <button id="sigUse" class="primary">Use signature</button>
+      </div>
+    </dialog>
+
+    <input type="file" id="fileOpen" accept="application/pdf,.pdf" hidden />
+    <input type="file" id="fileMerge" accept="application/pdf,.pdf" multiple hidden />
+    <input type="file" id="fileImage" accept="image/*" hidden />
+    <div id="toast"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

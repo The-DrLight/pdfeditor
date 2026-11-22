@@ -1,0 +1,40 @@
+# PDF Editor
+
+A browser-based PDF editor. Everything runs locally; files never leave your machine.
+
+```powershell
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # production build in dist/
+```
+
+## Features
+
+- **Edit existing text** (click a line, retype it; background and colour are sampled from the page)
+- Add text, images, signatures (draw / type / upload, saved on your device), pen, highlight, shapes, arrows
+- Whiteout and true **redaction** (the page is flattened so hidden text is really removed)
+- Fill **form fields** (text, checkbox, radio, dropdown); values are baked into the saved PDF
+- Page tools: rotate, delete, duplicate, insert blank, drag-reorder, merge another PDF, save a page range
+- Find text, watermark, page numbers, date / check / cross stamps
+- Undo / redo, zoom, keyboard shortcuts (Ctrl+S, Ctrl+Z/Y, Ctrl+D, Del, arrows, Esc)
+- Unicode text (Yoruba, Igbo, Hausa, Vietnamese...) via an embedded Noto Sans fallback
+
+## How it works
+
+| File | Role |
+|---|---|
+| `src/pdfload.js` | pdf.js: open file, page sizes, text runs, form widgets |
+| `src/view.js` | renders pages to `<canvas>`, HTML/SVG overlay for items, all tools and interactions |
+| `src/export.js` | pdf-lib: copies original pages, draws items on top (with a coordinate transform), writes form values |
+| `src/pages.js` | page operations + thumbnails |
+| `src/signature.js`, `src/props.js`, `src/state.js` | signature dialog, properties panel, state + undo history |
+
+Items are stored in "base space" (top-left origin, PDF points). On export a `cm` matrix maps that to the PDF's
+bottom-left space, including page rotation, so edits stay aligned.
+
+## Limits
+
+- Edits to existing text are "cover and retype" (the original glyphs stay underneath, hidden); there is no re-flow.
+- Redaction and password-protected PDFs flatten the affected pages to images.
+- Not a cryptographic signer: signatures are images, not certificate-based digital signatures.
+- Fonts are the PDF standard fonts (Helvetica / Times / Courier) plus the Noto Sans Unicode fallback.
