@@ -45,6 +45,7 @@ function valueOf(prop, it) {
 
 function render() {
   const ctx = context();
+  panel.classList.toggle('empty', !ctx);
   if (!ctx) {
     panel.innerHTML = '<div class="muted pad">Select an object or pick a tool to see its options.<br><br>Tip: double-click text to edit it. Use <b>Edit text</b> to change the text that is already in the PDF.</div>';
     return;

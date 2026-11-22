@@ -12,8 +12,10 @@ import {
 import { initThumbs, rotatePage, deletePage, duplicatePage, insertBlank } from './pages.js';
 import { initProps } from './props.js';
 import { openSignatureDialog } from './signature.js';
-import { exportPdf, parseRange } from './export.js';
-import { toast } from './util.js';
+import { toast, parseRange } from './util.js';
+
+// pdf-lib, fontkit and the Unicode fonts are only needed when saving: load them on demand.
+const loadExporter = () => import('./export.js');
 
 const $ = (id) => document.getElementById(id);
 
@@ -71,6 +73,7 @@ async function save(indices, suffix) {
   if (!state.pages.length) return toast('Open a PDF first.');
   try {
     toast('Preparing PDF…', 60000);
+    const { exportPdf } = await loadExporter();
     const bytes = await exportPdf(indices, (n, t) => { if (t > 8) toast(`Writing page ${n} of ${t}…`, 60000); });
     download(bytes, outName(suffix));
     toast(`Saved ${(bytes.length / 1024).toFixed(0)} KB`);
@@ -252,5 +255,17 @@ window.addEventListener('beforeunload', (e) => {
   if (isDirty()) { e.preventDefault(); e.returnValue = ''; }
 });
 
-// Debug / automation hook
-window.__app = { state, openPdf, exportPdf };
+// Never leave unexpected failures silent
+window.addEventListener('unhandledrejection', (e) => {
+  console.error(e.reason);
+  toast('Something went wrong: ' + (e.reason?.message || e.reason), 5000);
+});
+
+// Mobile: show / hide the page thumbnails drawer
+$('btnPages').onclick = () => document.body.classList.toggle('show-pages');
+on('cur', () => document.body.classList.remove('show-pages'));
+
+// Dev-only hook for manual testing; not shipped in production builds
+if (import.meta.env.DEV) {
+  window.__app = { state, openPdf, exportPdf: async (...a) => (await loadExporter()).exportPdf(...a) };
+}

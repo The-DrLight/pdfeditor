@@ -3,11 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDF Editor</title>
+    <title>PDF Editor: edit, sign and fill PDFs privately in your browser</title>
+    <meta name="description" content="Free PDF editor that runs entirely in your browser. Edit text, sign, fill forms, redact and rearrange pages. Your files are never uploaded." />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="referrer" content="no-referrer" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PDF Editor" />
+    <meta property="og:description" content="Edit, sign and fill PDFs privately. Everything runs in your browser; files are never uploaded." />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
+    <noscript>This PDF editor needs JavaScript to run.</noscript>
     <div id="app">
       <header class="bar top">
+        <button id="btnPages" class="only-mobile" title="Show pages" aria-label="Show pages">☰</button>
         <div class="brand">PDF<b>Editor</b></div>
         <button id="btnOpen" title="Open a PDF (Ctrl+O)">Open</button>
         <button id="btnMerge" title="Append pages from another PDF">Add PDF</button>

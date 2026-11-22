@@ -300,13 +300,3 @@ export async function exportPdf(indices, onProgress) {
   return out.save();
 }
 
-export function parseRange(str, total) {
-  const set = new Set();
-  for (const part of str.split(',')) {
-    const m = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
-    if (!m) continue;
-    const a = +m[1], b = m[2] ? +m[2] : a;
-    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= total) set.add(i - 1);
-  }
-  return [...set].sort((a, b) => a - b);
-}

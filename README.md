@@ -8,6 +8,14 @@ npm run dev      # http://localhost:5173
 npm run build    # production build in dist/
 ```
 
+## Deploy (Vercel)
+
+Import the repo; Vercel detects Vite (build `npm run build`, output `dist`). `vercel.json` adds a strict
+Content-Security-Policy and other security headers, and long-term caching for hashed assets.
+To test the production build with those same headers locally: `npm run build && npm run preview`.
+
+No backend or environment variables: PDFs are processed entirely in the visitor's browser.
+
 ## Features
 
 - **Edit existing text** (click a line, retype it; background and colour are sampled from the page)

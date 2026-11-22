@@ -145,4 +145,39 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 .saved:hover { border-color: var(--accent); }
 .saved button { position: absolute; top: -8px; right: -8px; width: 18px; height: 18px; padding: 0; line-height: 14px; border-radius: 50%; font-size: 12px; }
 
-@media (max-width: 900px) { #props { display: none; } #sidebar { width: 120px; } }
+.only-mobile { display: none; }
+
+/* Touch: let the page scroll with a finger unless the touch lands on an object or a drawing tool is active */
+.overlay { touch-action: pan-x pan-y pinch-zoom; }
+#viewer:not([data-tool="select"]) .overlay, .item, .handle, .seltools, .run { touch-action: none; }
+
+@media (max-width: 900px) {
+  #sidebar { width: 130px; }
+  /* Properties become a bottom sheet, only while there is something to edit */
+  #props { position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 42vh; z-index: 20; border-left: 0; border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(0,0,0,.18); }
+  #props.empty { display: none; }
+}
+@media (max-width: 700px) {
+  .only-mobile { display: inline-block; }
+  .brand { display: none; }
+  #sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; width: 160px; transform: translateX(-100%); transition: transform .2s; box-shadow: 4px 0 20px rgba(0,0,0,.3); }
+  body.show-pages #sidebar { transform: none; }
+  .bar { padding: 6px 8px; gap: 5px; }
+  .bar.tools { flex-wrap: nowrap; overflow-x: auto; }
+  .bar.tools button, .bar.tools .sep { flex: none; }
+  .bar.top { overflow-x: auto; flex-wrap: nowrap; }
+  .bar.top > * { flex: none; }
+  .bar.top .grow { display: none; }
+  input[type="search"] { width: 120px; font-size: 16px; }
+  #pages { padding: 14px 10px 160px; }
+  .selbox .handle { width: 16px; height: 16px; }
+  .h-nw { left: -9px; top: -9px; } .h-n { top: -9px; left: calc(50% - 8px); } .h-ne { right: -9px; top: -9px; }
+  .h-e { right: -9px; top: calc(50% - 8px); } .h-se { right: -9px; bottom: -9px; } .h-s { bottom: -9px; left: calc(50% - 8px); }
+  .h-sw { left: -9px; bottom: -9px; } .h-w { left: -9px; top: calc(50% - 8px); }
+  .empty-card { padding: 24px 20px; margin: 0 14px; }
+  .menu-pop { position: fixed; left: 8px; top: 96px; }
+}
+@media (pointer: coarse) {
+  button { min-height: 36px; }
+  .widget input, .widget textarea, .widget select { font-size: 16px !important; }
+}

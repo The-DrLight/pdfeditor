@@ -88,6 +88,18 @@ export function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
 }
 
+// "1-3, 5" -> [0, 1, 2, 4] (zero-based page indices)
+export function parseRange(str, total) {
+  const set = new Set();
+  for (const part of str.split(',')) {
+    const m = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if (!m) continue;
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= total) set.add(i - 1);
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
 export function toast(msg, ms = 2600) {
   const t = document.getElementById('toast');
   t.textContent = msg;
